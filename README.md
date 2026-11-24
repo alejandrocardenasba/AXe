@@ -10,17 +10,10 @@ AXe is a command-line tool that automates iOS simulators, including the dual-scr
 This fork adds Apple TV support to upstream AXe. It has no releases or Homebrew tap, so the CLI is built from source. To install upstream's release instead, see [docs/install-upstream.md](docs/install-upstream.md).
 
 ```bash
-git clone https://github.com/alejandrocardenasba/AXe.git && cd AXe
-scripts/build.sh frameworks-if-needed
-swift build -c release
-dest=~/.local/opt/axe && rm -rf "$dest" && mkdir -p "$dest" ~/.local/bin
-cp -R .build/release/axe .build/release/AXe_AXe.bundle .build/release/FBControlCore.framework .build/release/FBSimulatorControl.framework "$dest"
-xattr -crs "$dest" && codesign --force --sign - "$dest"/*.framework "$dest/axe"
-ln -sf "$dest/axe" ~/.local/bin/axe
-axe --help
+git clone https://github.com/alejandrocardenasba/AXe.git && cd AXe && scripts/install-fork.sh
 ```
 
-Needs Xcode and XcodeGen (`brew install xcodegen`), and `~/.local/bin` on `PATH`. `axe` finds its frameworks and resource bundle beside itself, so keep the four items together. To update, `git pull` and run the same commands again.
+[scripts/install-fork.sh](scripts/install-fork.sh) builds the checkout, installs `axe` with its frameworks and resource bundle into `~/.local/opt/axe`, links it as `~/.local/bin/axe` and prints the version. The previous install is kept as `~/.local/opt/axe.old`. `AXE_INSTALL_DIR` and `AXE_BIN_DIR` change the two paths. It needs Xcode and XcodeGen (`brew install xcodegen`), and `~/.local/bin` on `PATH`. To update, `git pull && scripts/install-fork.sh`.
 
 ### AI skill
 

@@ -13,7 +13,7 @@ Use agent mode (`--agent`) for every app read and input. An agent call checks th
 axe describe-ui --help | grep -- --agent
 ```
 
-- Not found, or found but no `--agent`: install this fork from source. It has no Homebrew package. Follow the Install section of https://github.com/alejandrocardenasba/AXe#install (clone, `scripts/build.sh frameworks-if-needed`, `swift build -c release`, copy `axe`, `AXe_AXe.bundle` and the two frameworks into `~/.local/opt/axe`, link `axe` into `~/.local/bin`).
+- Not found, or found but no `--agent`: install this fork from source. It has no Homebrew package. Run `git clone https://github.com/alejandrocardenasba/AXe.git && cd AXe && scripts/install-fork.sh` (in an existing checkout: `git pull && scripts/install-fork.sh`). It installs `~/.local/bin/axe`; see https://github.com/alejandrocardenasba/AXe#install.
 - Never run `brew install cameroncooke/axe/axe` or `brew upgrade` for it: that installs upstream's build, which lacks the Apple TV commands and replaces the fork.
 - Ask the user first if you may not install software. AXe needs macOS with Xcode.
 
