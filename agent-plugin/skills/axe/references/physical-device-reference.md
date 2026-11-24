@@ -1,6 +1,10 @@
 # Physical iPhone and iPad
 
-No agent mode. Every command takes the hardware UDID from `axe list-devices`.
+No agent mode. Every command takes the hardware UDID from `axe list-devices`. `list-devices` also lists paired Apple TVs, but AXe only lists them, runs `doctor` and `screenshot` on them, presses their Siri Remote buttons: `axe button home|menu|select|up|down|left|right|play-pause --udid "$TV_UDID"`, and sends keyboard input with `type`, `key`, `key-sequence` and `key-combo`, and reads the accessibility tree with `axe describe-ui --udid "$TV_UDID"` (read-only; confirmed on a real Apple TV, and each element includes `focused`, true on the one with focus and following the Siri Remote focus, and `--point` works there too), and records or streams its screen with `record-video` and `stream-video` in `mjpeg`, `raw`, `ffmpeg` or `bgra` (confirmed on a real Apple TV at about 1–1.5 fps, because each frame is a screenshot; `--format h264` is refused). `tap --semantic-press` also accepts one unique exact label or ID on Apple TV and reports native acceptance. Every other command, and `button lock` and `siri`, fails on an Apple TV with `unsupportedOnDevice`; the remote buttons fail the same way on a simulator, iPhone and iPad. Play-pause and keyboard input are confirmed on a real Apple TV. A screenshot of an Apple TV may render protected video playback as black; check the saved image.
+
+## Apple TV semantic press
+
+`axe tap --semantic-press --label "Search" --udid "$TV_UDID"` presses one exact label on a physical Apple TV; `--id` works only when unique. Repeated IDs such as `AppCell` are refused before input. The target must be visible, enabled, advertise AXPress, have a valid native PID/objectID and fit fully on screen. AXe revalidates a fresh tree and sends once, without replay. Success means `outcome: "accepted"`: native error 0, Boolean true and the DTX acknowledgement for the exact outbound request ID. It does not verify a screen change. JSON includes `identifier` (the element's own accessibility ID, such as the shared `AppCell`, or empty; not the label you passed), `outcome`, `delivery: "nativeReplyAccepted"` and `readbackCount: 0`, without checkbox states. No coordinates, other selectors, styles, delays, polling, agent/selected mode or batches. Inspect the screen after uncertain delivery before any further action. iPhone/iPad semantic press still requires an exact checkbox ID and an observed Boolean value change.
 
 ## Readiness
 
@@ -12,7 +16,7 @@ axe describe-ui --udid "$DEVICE_UDID"
 ```
 
 - Pair in Xcode, enable Developer Mode, unlock. AXe does none of these.
-- Resolve every `doctor` check before continuing. A failure ends `Error: <name> is not ready.` with the check's ID as code: `notPaired`, `developerModeDisabled`, `deviceNotConnected`, `developerDiskImageUnavailable`, `deviceLocked`, `screenshotServiceUnavailable`.
+- Resolve every `doctor` check before continuing. A failure ends `Error: <name> is not ready.` with the check's ID as code: `notPaired`, `developerModeDisabled`, `deviceNotConnected`, `developerDiskImageUnavailable`, `deviceLocked`, `screenshotServiceUnavailable`. On an Apple TV, `doctor` reports `deviceLocked` as `notChecked` and does not fail on it.
 - Structured checks: `axe --output json doctor --udid "$DEVICE_UDID"`.
 - "The CoreDevice service directory port was not found": this Mac hides network connections from AXe. The message ends with one `axe device-port --udid … --port "$(netstat …)"` line; ask the user to paste it in their own Terminal, then retry. AXe checks and saves the port until the device's tunnel is recreated. `axe device-port --udid "$DEVICE_UDID"` prints the line again.
 - Open the saved screenshot to verify what is visible.

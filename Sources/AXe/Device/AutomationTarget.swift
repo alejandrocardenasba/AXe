@@ -35,16 +35,36 @@ enum AutomationTarget {
             developerModeEnabled: nil, developerDiskImageMounted: nil, coreDeviceVersion: nil)
     }
 
-    /// The full CoreDevice record for a hardware UDID, read from the inventory.
-    static func physicalDeviceRecord(udid: String) async throws -> CoreDevice? {
-        guard isPhysicalInputUDID(udid) else { return nil }
-        guard let device = try await CoreDeviceInventory.list().first(where: {
-            $0.udid?.caseInsensitiveCompare(udid) == .orderedSame
-        }) else {
+    /// The full CoreDevice record for a hardware UDID or a CoreDevice UUID, read from the inventory.
+    /// A UUID has a simulator UUID's shape and devicectl accepts it for any paired device, so only the
+    /// inventory (which lists no simulators) tells them apart: a UUID it does not list returns nil.
+    static func physicalDeviceRecord(udid: String, allowingAppleTV: Bool = false) async throws -> CoreDevice? {
+        let isHardwareUDID = isPhysicalInputUDID(udid)
+        let uuid = UUID(uuidString: udid)
+        guard isHardwareUDID || uuid != nil else { return nil }
+        // devicectl costs 0.2-0.7 s and a simulator call must stay as fast as the latest release
+        // (AGENTS.md, Performance), so a directory in the default device set skips the inventory.
+        if let uuid, isSimulatorInDefaultSet(uuid) { return nil }
+        guard let device = try await CoreDeviceInventory.list().first(where: { $0.matches(udid) }) else {
+            guard isHardwareUDID else { return nil }
             throw CLIOutputFailure(code: "targetNotFound",
                 message: "No physical device matches the hardware UDID. Run axe list-devices.")
         }
+        // The input broker, video recording and streaming, and settings look the device up here, so this is the
+        // one place that keeps an Apple TV, which list-devices shows, from being driven. The broker passes
+        // `allowingAppleTV` and then admits remote buttons, keyboard input, semantic press and tree reads; record-video and
+        // stream-video pass it because they only read the screen. doctor and screenshot use `resolve` instead.
+        if device.isAppleTV, !allowingAppleTV {
+            throw unsupportedOnDevice("AXe supports only list-devices, doctor, screenshot, record-video, stream-video, describe-ui, tap --semantic-press, axe button and keyboard input on an Apple TV.")
+        }
         return device
+    }
+
+    /// AXe only uses the default device set; a simulator outside it still reaches the inventory, which lists none.
+    private static func isSimulatorInDefaultSet(_ uuid: UUID) -> Bool {
+        let devices = FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent("Library/Developer/CoreSimulator/Devices", isDirectory: true)
+        return FileManager.default.fileExists(atPath: devices.appendingPathComponent(uuid.uuidString).path)
     }
 
     /// Refuses a simulator-only command for a physical device's hardware UDID, before any work.

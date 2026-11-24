@@ -62,7 +62,7 @@ actor PhysicalDeviceBrokerOwner {
         if let device {
             listed = device
         } else {
-            guard let found = try await AutomationTarget.physicalDeviceRecord(udid: udid) else {
+            guard let found = try await AutomationTarget.physicalDeviceRecord(udid: udid, allowingAppleTV: true) else {
                 throw PhysicalDeviceBrokerProtocol.unavailable
             }
             device = found
@@ -81,7 +81,9 @@ actor PhysicalDeviceBrokerOwner {
             throw CLIOutputFailure(code: "deviceLocked",
                 message: "The lock button was pressed earlier in this command. Unlock the device before sending more input.")
         }
-        if lockRecheck.needsCheck(at: .now), try await CoreDeviceInventory.lockState(for: device) != false {
+        // `devicectl` cannot read an Apple TV's lock state.
+        if !device.isAppleTV, lockRecheck.needsCheck(at: .now),
+           try await CoreDeviceInventory.lockState(for: device) != false {
             throw CLIOutputFailure(code: "deviceLocked", message: "Unlock the device before sending input or reading its screen.")
         }
     }
@@ -98,6 +100,7 @@ actor PhysicalDeviceBrokerOwner {
             throw CLIOutputFailure(code: "deviceBrokerUnavailable", message: "The broker has no ready device session.")
         }
         do {
+            try operation.requireSupported(onAppleTV: device.isAppleTV)
             try await admitInput(operation, on: device)
             let value = try await perform(operation, on: input)
             recordInput(operation)
@@ -149,9 +152,9 @@ actor PhysicalDeviceBrokerOwner {
                 await closeAccessibility()
                 throw error
             }
-        case let .semanticPress(identifier):
+        case let .semanticPress(selector):
             do {
-                return .semanticPress(try await semanticPress(identifier, on: input))
+                return .semanticPress(try await semanticPress(selector, on: input))
             } catch {
                 await closeAccessibility()
                 throw error
@@ -220,7 +223,9 @@ actor PhysicalDeviceBrokerOwner {
         return snapshot
     }
 
-    private func semanticPress(_ identifier: String, on input: PhysicalDeviceInputOwner) async throws -> PhysicalSemanticPressReceipt {
+    private func semanticPress(_ selector: PhysicalSemanticPressSelector, on input: PhysicalDeviceInputOwner) async throws -> PhysicalSemanticPressReceipt {
+        let onAppleTV = device?.isAppleTV == true
+        let identifier = selector.value
         let budget = try ReadBudget(timeout: 16)
         let display = try await input.display(timeout: budget.remaining())
         let bounds = try CGRect(x: 0, y: 0, width: display.width, height: display.height)
@@ -228,6 +233,16 @@ actor PhysicalDeviceBrokerOwner {
 
         func prepare(_ archive: PhysicalAXTreeArchive) throws -> FBPhysicalAXTreeProjection.PreparedPress {
             do {
+                if onAppleTV {
+                    let targetID: String?, targetLabel: String?
+                    switch selector {
+                    case let .id(value): (targetID, targetLabel) = (value, nil)
+                    case let .label(value): (targetID, targetLabel) = (nil, value)
+                    }
+                    return try FBPhysicalAXTreeProjection.prepareTVPress(archive: archive.data,
+                        entries: PhysicalAccessibility.projectionEntries(archive),
+                        identifier: targetID, label: targetLabel, displayBounds: bounds)
+                }
                 return try FBPhysicalAXTreeProjection.preparePress(archive: archive.data,
                     entries: PhysicalAccessibility.projectionEntries(archive), identifier: identifier, displayBounds: bounds)
             } catch {
@@ -243,7 +258,8 @@ actor PhysicalDeviceBrokerOwner {
         guard snapshot.archive.data == freshArchive.data,
               initial.target.matchesReadback(fresh.target), initial.target.value == fresh.target.value,
               try await input.display(timeout: budget.remaining()) == display else {
-            throw CLIOutputFailure(code: "targetChanged", message: "The checkbox or display changed before the semantic press.")
+            throw CLIOutputFailure(code: "targetChanged", message: onAppleTV ? "The target or display changed before the semantic press."
+                    : "The checkbox or display changed before the semantic press.")
         }
 
         try Task.checkCancellation()
@@ -260,7 +276,13 @@ actor PhysicalDeviceBrokerOwner {
             throw failure
         } catch {
             throw CLIOutputFailure(code: "semanticPressUnconfirmed",
-                message: "AXe did not confirm the semantic action. Inspect the checkbox before issuing another action.")
+                message: onAppleTV ? "AXe did not confirm the semantic action. Inspect the target before issuing another action."
+                    : "AXe did not confirm the semantic action. Inspect the checkbox before issuing another action.")
+        }
+
+        if onAppleTV {
+            return PhysicalSemanticPressReceipt(identifier: fresh.target.identifier, stateBefore: nil,
+                stateAfter: nil, readbackCount: 0, outcome: "accepted", delivery: "nativeReplyAccepted")
         }
 
         for count in 1...4 {

@@ -1,6 +1,6 @@
 ---
 name: axe
-description: Official skill for the AXe CLI, which gives agents eyes and hands on iOS apps. Sees and operates app UI, including web pages in Safari and web views, takes screenshots and changes device settings on iOS Simulators and physical iPhones and iPads. Use when checking, testing or validating an iOS app after building or changing it, or whenever an iOS app's screen needs to be seen or driven. Also use when the user wants to see or touch a simulator from their own iPhone or iPad, or to pair that device (axe remote).
+description: Official skill for the AXe CLI, which gives agents eyes and hands on iOS and tvOS apps. Sees and operates app UI, including web pages in Safari and web views, takes screenshots, records video and changes simulator settings on iOS Simulators and on physical iPhones, iPads and Apple TVs. Use when the target is any physical device, and always for a physical Apple TV, which no other tool drives. Also use it on a simulator when no Xcode device session is open. For the app you just built and ran from Xcode, use the device-interaction skill instead, because it runs inside Xcode's own session. Also use it when the user wants to see or touch a simulator from their own iPhone or iPad, or to pair that device (axe mirror).
 ---
 
 # AXe
@@ -160,7 +160,7 @@ Agent mode covers app reads and input on every simulator, including the iPhone D
 | work on a physical iPhone or iPad (no agent mode) | [physical-device-reference.md](references/physical-device-reference.md) |
 | use iPhone Duo screens, hinge and rotation, or pin capture or input to one display | [device-reference.md](references/device-reference.md) |
 | set dark mode, text size, accessibility display settings, VoiceOver, location or status bar | [settings-reference.md](references/settings-reference.md) |
-| run a command with no UI target (`list-simulators`, `displays`, `screenshot`, `button`, `shutdown`) or a gesture with no agent form | [cli-quick-reference.md](references/cli-quick-reference.md) |
+| run a command with no UI target (`list-simulators`, `displays`, `screenshot`, `button`, `shutdown`), a gesture with no agent form, `describe-ui --minimal-keys` or `serve` for scripts | [cli-quick-reference.md](references/cli-quick-reference.md) |
 | record or stream video | [recording-reference.md](references/recording-reference.md) |
 | stage text on the clipboard | [clipboard-reference.md](references/clipboard-reference.md) |
 | show a simulator live on the user's iPhone or iPad, or pair that device (`axe remote`, long-running, prints JSON events), or put a build of their app on it (`axe remote build`) | [mirror-reference.md](references/mirror-reference.md) |

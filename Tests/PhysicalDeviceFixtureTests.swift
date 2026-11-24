@@ -210,6 +210,77 @@ struct CoreDeviceInventoryJSONTests {
         #expect(status("deviceNotConnected", in: unpaired) == .blocked)
         #expect(status("deviceLocked", in: unpaired) == .unchecked)
     }
+
+    /// devicectl's record for a paired Apple TV on the local network (legacy `hardwareProperties` shape).
+    static let appleTVList = #"""
+    {
+      "info": {"jsonVersion": 6, "outcome": "success", "version": "689.2"},
+      "result": {"devices": [
+        {
+          "identifier": "77777777-7777-4777-8777-777777777777",
+          "hardwareProperties": {"udid": "00000007-0000000000000007", "marketingName": "Apple TV 4K (2nd generation)",
+                                 "productType": "AppleTV11,1", "deviceType": "appleTV", "platform": "tvOS",
+                                 "reality": "physical"},
+          "connectionProperties": {"pairingState": "paired", "tunnelState": "disconnected",
+                                   "transportType": "localNetwork"},
+          "deviceProperties": {"name": "Sala", "osVersionNumber": "27.2"}
+        },
+        {
+          "identifier": "88888888-8888-4888-8888-888888888888",
+          "visibilityClass": "simulators",
+          "hardwareProperties": {"productType": "AppleTV11,1", "deviceType": "appleTV", "platform": "tvOS",
+                                 "reality": "simulated"},
+          "connectionProperties": {"pairingState": "paired", "transportType": "sameMachine"},
+          "deviceProperties": {"name": "Apple TV Simulator"}
+        }
+      ]}
+    }
+    """#
+
+    /// A record that names the model only through `productType`, as the iPhone 18,1 record in `currentList` does.
+    static let appleTVProductTypeOnlyList = #"""
+    {
+      "info": {"version": "689.2"},
+      "result": {"devices": [{
+        "identifier": "99999999-9999-4999-8999-999999999999",
+        "properties": {
+          "hardware": {"udid": "00000009-0000000000000009", "productType": "AppleTV11,1", "fidelity": "physical"},
+          "connection": {"pairingState": "paired", "state": "disconnected", "transportType": "localNetwork"},
+          "state": {"name": "Sala"}
+        }
+      }]}
+    }
+    """#
+
+    // User clause: `axe list-devices` lists the paired real Apple TV "Sala"; a tvOS simulator is not a device.
+    @Test("A paired physical Apple TV is listed and a tvOS simulator is not")
+    func appleTV() throws {
+        let list = try devices(Self.appleTVList)
+        #expect(list.map(\.identifier) == ["77777777-7777-4777-8777-777777777777"])
+        let tv = try #require(list.first)
+        #expect(tv.name == "Sala")
+        #expect(tv.model == "Apple TV 4K (2nd generation)")
+        #expect(tv.transport == "localNetwork")
+        #expect(tv.paired == true)
+        #expect(tv.isAppleTV == true)
+    }
+
+    // User clause: the real Apple TV "Sala" is listed, including when a record carries only `productType`.
+    @Test("An Apple TV record that names only its productType is listed")
+    func appleTVProductTypeOnly() throws {
+        let list = try devices(Self.appleTVProductTypeOnlyList)
+        #expect(list.map(\.name) == ["Sala"])
+        #expect(list.first?.isAppleTV == true)
+    }
+
+    // Stage A sends no input to an Apple TV: `AutomationTarget.physicalDeviceRecord` refuses on this flag,
+    // so it must be false for the phones and tablets that commands do drive.
+    @Test("iPhones and iPads are not flagged as an Apple TV")
+    func phonesAreNotAppleTV() throws {
+        let list = try devices(Self.currentList) + devices(Self.legacyList)
+        #expect(list.count == 5)
+        #expect(list.allSatisfy { !$0.isAppleTV })
+    }
 }
 
 // MARK: - RemoteXPC wire
@@ -404,6 +475,33 @@ struct PhysicalDeviceDisplayTests {
             mode: (2778, 1940), scale: 2, sensor: "landscapeRight"))
         #expect(try display.width == 1389)
         #expect(try display.height == 970)
+    }
+
+    // Requirement: B3a describe-ui on Apple TV, owner decision 2026-11-12. Sala live devicectl reply, 2026-11-12:
+    // the only primary display is the external TVOut panel, there is no top-level `orientation`, and the two
+    // wireless displays are not primary.
+    @Test("An Apple TV reply with an external primary display reads as 1920 by 1080")
+    func appleTV() throws {
+        func display(name: String, id: UInt64, primary: Bool, size: Double, height: Double,
+                     scale: RemoteXPCValue) -> RemoteXPCValue {
+            .dictionary([
+                "name": .string(name), "primary": .bool(primary), "external": .bool(true), "displayId": .uint64(id),
+                "nativeOrientation": .string("rot0"), "currentOrientation": .string("rot0"),
+                "currentMode": .dictionary(["size": .array([.double(size), .double(height)]), "preferredUIScale": scale]),
+            ])
+        }
+        let output: [String: RemoteXPCValue] = [
+            "backlightState": .string("activeOn"), "current": .bool(true),
+            "displays": .array([
+                display(name: "TVOut", id: 1, primary: true, size: 1920, height: 1080, scale: .int64(1)),
+                display(name: "Wireless", id: 2, primary: false, size: 1920, height: 1088, scale: .int64(2)),
+                display(name: "Wireless-1", id: 3, primary: false, size: 0, height: 0, scale: .int64(1)),
+            ]),
+        ]
+        let tv = try PhysicalDeviceDisplay(response: ["CoreDevice.output": .dictionary(output)])
+        #expect(try tv.width == 1920)
+        #expect(try tv.height == 1080)
+        #expect(tv.displayID == 1)
     }
 
     @Test("Points outside the display are refused")

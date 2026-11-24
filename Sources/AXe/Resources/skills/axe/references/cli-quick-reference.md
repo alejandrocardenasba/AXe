@@ -11,9 +11,12 @@ No UI target, so no `--agent`; app reads and input use the agent commands in SKI
 - [Screenshot](#screenshot)
 - [Video recording](#video-recording)
 - [Video streaming](#video-streaming)
+- [Faster plain reads](#faster-plain-reads)
+- [Serve](#serve)
 - [Mirror to an iPhone or iPad](#mirror-to-an-iphone-or-ipad)
 - [Clipboard staging](#clipboard-staging)
 - [Gestures and drawing](#gestures-and-drawing)
+- [Apple TV semantic press](#apple-tv-semantic-press)
 - [Hardware buttons](#hardware-buttons)
 - [Simulator shutdown](#simulator-shutdown)
 - [Common keycodes](#common-keycodes)
@@ -105,6 +108,28 @@ printf '%s' 'AXe sample' | axe clipboard copy --stdin --udid <UDID>
 - Replaces a shared clipboard. No agent/selected/batch options, automatic Paste, restore or retry.
 - Preserve failures. Get fresh UI refs and verify app insertion separately. [clipboard-reference.md](clipboard-reference.md).
 
+## Faster plain reads
+
+```bash
+axe describe-ui --minimal-keys --udid <UDID>
+```
+
+- Plain `describe-ui` only: the full tree as JSON, with just label, identifier, value, frame, role, role description, type and enabled state (and an empty `traits` list). Faster to read.
+- Refused with `--agent` or selected input, and on a physical device. Agent captures are already compact.
+
+## Serve
+
+```bash
+printf 'describe-ui --minimal-keys\ntap --label General\nping\n' | axe serve --udid <UDID>
+```
+
+- For a script that sends many commands: one process per simulator, so each command skips startup and the simulator lookup.
+- Simulators only; a physical UDID is refused. `--udid` is for `serve`, not for the lines.
+- One command per standard input line, as typed after `axe` without `--udid`. Blank lines and lines starting with `#` are skipped.
+- Prints a ready line first, then one JSON line per command, in order: what `axe --output json <command>` prints. A refused or failed line gets its error line and serve carries on. Exits when standard input closes; logs go to standard error.
+- Commands: `describe-ui`, `displays`, `screenshot`, `tap`, `swipe`, `drag`, `draw`, `type`, `button`, `key`, `key-sequence`, `key-combo`, `touch`, `gesture`, `slider`, `rotate`, `hinge`; `ping` answers `{"pong": true}` data without touching the simulator. Others (`batch`, `record-video`, `stream-video`) are refused.
+- A line with `--udid` or `--stdin` is refused; pass text as an argument or `--file`.
+
 ## Gestures and drawing
 
 Only for gestures with no agent form. Taps, long presses, double taps, drags, scrolls and pinches on a control use the agent commands in SKILL.md.
@@ -123,6 +148,10 @@ axe gesture pinch -x 200 -y 400 --radius 60 --scale 0.5 --udid <UDID>  # zoom ou
 - `rotate`, `two-finger-tap`, `two-finger-hold`, `two-finger-swipe` take explicit points: `axe gesture --help`.
 - None returns a capture or proves the app recognised the gesture; capture again.
 
+## Apple TV semantic press
+
+`axe tap --semantic-press --label "Search" --udid "$TV_UDID"` presses one exact label on a physical Apple TV; `--id` works only when unique. Repeated IDs such as `AppCell` are refused before input. The target must be visible, enabled, advertise AXPress, have a valid native PID/objectID and fit fully on screen. AXe revalidates a fresh tree and sends once, without replay. Success means `outcome: "accepted"`: native error 0, Boolean true and the DTX acknowledgement for the exact outbound request ID. It does not verify a screen change. JSON includes `identifier`, `outcome`, `delivery: "nativeReplyAccepted"` and `readbackCount: 0`, without checkbox states. No coordinates, other selectors, styles, delays, polling, agent/selected mode or batches. Inspect the screen after uncertain delivery before any further action. iPhone/iPad semantic press still requires an exact checkbox ID and an observed Boolean value change.
+
 ## Hardware buttons
 
 ```bash
@@ -132,8 +161,10 @@ axe button lock --duration 3.0 --udid <UDID>    # long press
 axe button side-button --udid <UDID>
 axe button siri --udid <UDID>
 axe button apple-pay --udid <UDID>
+axe button menu --udid <Apple TV UDID>          # also select, up, down, left, right, play-pause
 ```
 
+- Siri Remote buttons (`menu`, `select`, `up`, `down`, `left`, `right`, `play-pause`) work only on an Apple TV, by hardware UDID; `home` works there too. An Apple TV also takes keyboard input (`type`, `key`, `key-sequence`, `key-combo`) and `describe-ui` (read-only; confirmed on a real Apple TV; each element includes `focused`, true on the one with focus and following the Siri Remote focus; `--point` works there too), plus `record-video` and `stream-video` in `mjpeg`, `raw`, `ffmpeg` or `bgra`, confirmed on a real Apple TV at about 1–1.5 fps (each frame is a screenshot); `--format h264` is refused there. Play-pause and keyboard input are confirmed on a real Apple TV. [physical-device-reference.md](physical-device-reference.md).
 - Acts on the whole device. After Home or any button that changes the foreground app, take a new agent capture before more input.
 - Receipts confirm transport, not Siri, payment UI, secure lock, wake or power. Never replay uncertain input.
 - Display-selected buttons on iPhone Duo: [device-reference.md](device-reference.md#selected-device-buttons).
