@@ -7,21 +7,33 @@ AXe is a command-line tool that automates iOS simulators, including the dual-scr
 
 ## Install
 
+This fork adds Apple TV support to upstream AXe. It has no releases or Homebrew tap, so the CLI is built from source. To install upstream's release instead, see [docs/install-upstream.md](docs/install-upstream.md).
+
 ```bash
-brew install cameroncooke/axe/axe
+git clone https://github.com/alejandrocardenasba/AXe.git && cd AXe
+scripts/build.sh frameworks-if-needed
+swift build -c release
+dest=~/.local/opt/axe && rm -rf "$dest" && mkdir -p "$dest" ~/.local/bin
+cp -R .build/release/axe .build/release/AXe_AXe.bundle .build/release/FBControlCore.framework .build/release/FBSimulatorControl.framework "$dest"
+xattr -crs "$dest" && codesign --force --sign - "$dest"/*.framework "$dest/axe"
+ln -sf "$dest/axe" ~/.local/bin/axe
 axe --help
 ```
 
+Needs Xcode and XcodeGen (`brew install xcodegen`), and `~/.local/bin` on `PATH`. `axe` finds its frameworks and resource bundle beside itself, so keep the four items together. To update, `git pull` and run the same commands again.
+
 ### AI skill
 
-`axe init` installs the skill bundled with your AXe binary for the AI clients it detects (`--client claude|agents`, `--dest <dir>`, `--force`, `--uninstall`, `--print`). To keep the skill updated as releases ship, install it from this repository's marketplace instead, and keep the CLI on the latest release:
+`axe init` installs the skill bundled with your AXe binary for the AI clients it detects (`--client claude|agents`, `--dest <dir>`, `--force`, `--uninstall`, `--print`). For Kiro, which `--client` does not cover, use `axe init --dest ~/.kiro/skills --force`. The bundled skill is the fork's, so it updates when you rebuild and run `axe init --force` again.
+
+To install the skill as a plugin from this fork's marketplace:
 
 ```bash
-claude plugin marketplace add cameroncooke/AXe --sparse .claude-plugin agent-plugin && claude plugin install axe@axe
-codex plugin marketplace add cameroncooke/AXe --sparse .agents --sparse agent-plugin && codex plugin add axe@axe
+claude plugin marketplace add alejandrocardenasba/AXe --sparse .claude-plugin agent-plugin && claude plugin install axe@axe
+codex plugin marketplace add alejandrocardenasba/AXe --sparse .agents --sparse agent-plugin && codex plugin add axe@axe
 ```
 
-The plugin is the `agent-plugin` folder: its manifests and the skill in `agent-plugin/skills/axe`. `--sparse` fetches only the marketplace files and that folder, not the rest of the repository.
+The plugin is the `agent-plugin` folder: its manifests and the skill in `agent-plugin/skills/axe`. `--sparse` fetches only the marketplace files and that folder, not the rest of the repository. The skill's "not found" hint still says `brew install cameroncooke/axe/axe`, which installs upstream's build without Apple TV support; ignore it and use the steps above.
 
 ## Quick start
 
