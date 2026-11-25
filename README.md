@@ -15,7 +15,7 @@ git clone --depth 1 --filter=blob:none --sparse https://github.com/alejandrocard
 
 The clone skips `promo-video/`, about 200 MB of upstream's promotional videos that the build does not use, so it downloads about 33 MB instead of about 450 MB.
 
-[scripts/install-fork.sh](scripts/install-fork.sh) builds the checkout, installs `axe` with its frameworks and resource bundle into `~/.local/opt/axe`, links it as `~/.local/bin/axe` and prints the version. The previous install is kept as `~/.local/opt/axe.old`. `AXE_INSTALL_DIR` and `AXE_BIN_DIR` change the two paths. It needs Xcode and XcodeGen (`brew install xcodegen`). If `~/.local/bin` is not on `PATH`, the script says so; add it with `echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc` and open a new shell. To update, run `git pull && scripts/install-fork.sh` in the clone.
+[scripts/install-fork.sh](scripts/install-fork.sh) builds the checkout, installs `axe` with its frameworks and resource bundle into `~/.local/opt/axe`, links it as `~/.local/bin/axe` and prints the version, which in a shallow clone is the commit's short hash, such as `f146104`. The build takes about three minutes. The previous install is kept as `~/.local/opt/axe.old`. `AXE_INSTALL_DIR` and `AXE_BIN_DIR` change the two paths. It needs Xcode and XcodeGen (`brew install xcodegen`). If `~/.local/bin` is not on `PATH`, the script says so; add it with `echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc` and open a new shell. To update, run `git pull && scripts/install-fork.sh` in the clone.
 
 ### AI skill
 
@@ -28,7 +28,7 @@ claude plugin marketplace add alejandrocardenasba/AXe --sparse .claude-plugin ag
 codex plugin marketplace add alejandrocardenasba/AXe --sparse .agents --sparse agent-plugin && codex plugin add axe@axe
 ```
 
-The plugin is the `agent-plugin` folder: its manifests and the skill in `agent-plugin/skills/axe`. `--sparse` fetches only the marketplace files and that folder, not the rest of the repository. The skill's "not found" hint still says `brew install cameroncooke/axe/axe`, which installs upstream's build without Apple TV support; ignore it and use the steps above.
+The plugin is the `agent-plugin` folder: its manifests and the skill in `agent-plugin/skills/axe`. `--sparse` fetches only the marketplace files and that folder, not the rest of the repository.
 
 ## Quick start
 
