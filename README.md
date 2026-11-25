@@ -10,10 +10,12 @@ AXe is a command-line tool that automates iOS simulators, including the dual-scr
 This fork adds Apple TV support to upstream AXe. It has no releases or Homebrew tap, so the CLI is built from source. To install upstream's release instead, see [docs/install-upstream.md](docs/install-upstream.md).
 
 ```bash
-git clone https://github.com/alejandrocardenasba/AXe.git && cd AXe && scripts/install-fork.sh
+git clone --depth 1 --filter=blob:none --sparse https://github.com/alejandrocardenasba/AXe.git && cd AXe && git sparse-checkout set --no-cone '/*' '!/promo-video/' && scripts/install-fork.sh
 ```
 
-[scripts/install-fork.sh](scripts/install-fork.sh) builds the checkout, installs `axe` with its frameworks and resource bundle into `~/.local/opt/axe`, links it as `~/.local/bin/axe` and prints the version. The previous install is kept as `~/.local/opt/axe.old`. `AXE_INSTALL_DIR` and `AXE_BIN_DIR` change the two paths. It needs Xcode and XcodeGen (`brew install xcodegen`), and `~/.local/bin` on `PATH`. To update, `git pull && scripts/install-fork.sh`.
+The clone skips `promo-video/`, about 200 MB of upstream's promotional videos that the build does not use, so it downloads about 33 MB instead of about 450 MB.
+
+[scripts/install-fork.sh](scripts/install-fork.sh) builds the checkout, installs `axe` with its frameworks and resource bundle into `~/.local/opt/axe`, links it as `~/.local/bin/axe` and prints the version. The previous install is kept as `~/.local/opt/axe.old`. `AXE_INSTALL_DIR` and `AXE_BIN_DIR` change the two paths. It needs Xcode and XcodeGen (`brew install xcodegen`). If `~/.local/bin` is not on `PATH`, the script says so; add it with `echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc` and open a new shell. To update, run `git pull && scripts/install-fork.sh` in the clone.
 
 ### AI skill
 

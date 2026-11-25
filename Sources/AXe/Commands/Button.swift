@@ -81,7 +81,7 @@ struct Button: PhysicalDeviceCommand {
         abstract: "Press a hardware button.",
         discussion: """
         Physical devices support home, siri and lock; lock needs --allow-lock, and you must unlock the device yourself.
-        An Apple TV supports home, menu, select, up, down, left, right and play-pause. Play-pause is unconfirmed on a
+        An Apple TV supports home, menu, select, up, down, left, right and play-pause; play-pause is confirmed on a
         real Apple TV. The remote buttons work only on an Apple TV.
 
         Examples:
