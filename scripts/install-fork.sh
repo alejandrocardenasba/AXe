@@ -10,6 +10,8 @@ bin_dir="${AXE_BIN_DIR:-$HOME/.local/bin}"
 cd "$root"
 # build.sh deletes build_products/ when it rebuilds stale frameworks, so nothing else may live there.
 scripts/build.sh frameworks-if-needed
+# VersionPlugin declares no inputs, so SwiftPM keeps a stale Version.swift and `axe --version` would name an old commit.
+find .build/plugins/outputs -path '*VersionPlugin/Version.swift' -delete 2>/dev/null || true
 swift build -c release
 
 # axe finds its frameworks and resource bundle through @executable_path, so the four items stay together.
