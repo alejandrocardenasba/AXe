@@ -13,9 +13,9 @@ Use agent mode (`--agent`) for every app read and input. An agent call checks th
 axe describe-ui --help | grep -- --agent
 ```
 
-- Not found, or found but no `--agent`: install this fork from source. It has no Homebrew package. Run `git clone --depth 1 --filter=blob:none --sparse https://github.com/alejandrocardenasba/AXe.git && cd AXe && git sparse-checkout set --no-cone '/*' '!/promo-video/' && scripts/install-fork.sh` (in an existing checkout: `git pull && scripts/install-fork.sh`). It installs `~/.local/bin/axe`; see https://github.com/alejandrocardenasba/AXe#install.
+- Not found, or found but no `--agent`: install this fork from source. It has no Homebrew package. Run `git clone --depth 1 --filter=blob:none --sparse https://github.com/alejandrocardenasba/AXe.git && cd AXe && git sparse-checkout set --no-cone '/*' '!/promo-video/' && scripts/install-fork.sh` from the folder that should hold the clone, such as `~/Developer` (in an existing checkout: `git pull && scripts/install-fork.sh`). It needs Xcode and XcodeGen (`brew install xcodegen` is fine; only AXe itself must not come from brew). The clone and build take a few minutes. It installs `~/.local/bin/axe`; if `axe` is still not found, run `export PATH="$HOME/.local/bin:$PATH"` and tell the user to add that line to `~/.zshrc`. See https://github.com/alejandrocardenasba/AXe#install.
 - Never run `brew install cameroncooke/axe/axe` or `brew upgrade` for it: that installs upstream's build, which lacks the Apple TV commands and replaces the fork.
-- Ask the user first if you may not install software. AXe needs macOS with Xcode.
+- Ask the user first if you may not install software.
 
 ## Step 2: Find the simulator and capture
 
