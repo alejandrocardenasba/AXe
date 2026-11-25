@@ -19,7 +19,7 @@ The clone skips `promo-video/`, about 200 MB of upstream's promotional videos th
 
 ### AI skill
 
-`axe init` installs the skill bundled with your AXe binary for the AI clients it detects (`--client claude|agents`, `--dest <dir>`, `--force`, `--uninstall`, `--print`). For Kiro, which `--client` does not cover, use `axe init --dest ~/.kiro/skills --force`. The bundled skill is the fork's, so it updates when you rebuild and run `axe init --force` again.
+`axe init` installs the skill bundled with your AXe binary for the AI clients it detects (`--client claude|agents`, `--dest <dir>`, `--force`, `--uninstall`, `--print`). It detects a client by its folder, so on a Mac where Claude Code has not run yet, pass `--client claude`. For Kiro, which `--client` does not cover, use `axe init --dest ~/.kiro/skills --force`. The bundled skill is the fork's, so it updates when you rebuild and run `axe init --force` again.
 
 To install the skill as a plugin from this fork's marketplace:
 
